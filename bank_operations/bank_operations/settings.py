@@ -81,7 +81,7 @@ DATABASES = {
         'NAME': 'django',
         'USER': 'django',
         'PASSWORD': 'django',
-        'HOST': 'database',
+        'HOST': 'db',
         'PORT': 5432,
     },
     'TEST': {
@@ -129,6 +129,8 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-CELERY_BROKER_URL = 'redis://localhost:6379'
+CELERY_BROKER_URL = 'redis://redis:6379'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
+
+CELERY_RESULT_BACKEND = 'redis'

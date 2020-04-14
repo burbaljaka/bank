@@ -16,7 +16,7 @@ redis:
 
 api:
     build: ./bank_operations
-    command: bash -c "python manage.py migrate && python manage.py loaddata tests && python manage.py runserver 0.0.0.0:8000"
+    command: bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
     volumes:
         - ./bank_operations:/django
     ports:
@@ -39,6 +39,9 @@ adminer:
         - db
 celery:
     build: ./bank_operations
-    command: celery -A django worker -l info
+    command: celery -A bank_operations worker -l info
     volumes:
-        - ./bank_operations:/usr/src/app
+        - ./bank_operations:/django
+    links:
+        - redis
+        - api
