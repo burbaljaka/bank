@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
     'api'
 ]
 
@@ -76,10 +77,18 @@ WSGI_APPLICATION = 'bank_operations.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'django',
+        'USER': 'django',
+        'PASSWORD': 'django',
+        'HOST': 'database',
+        'PORT': 5432,
+    },
+    'TEST': {
+            'NAME': os.path.join(BASE_DIR, 'db_test.sqlite3')
     }
 }
+
 
 
 # Password validation
@@ -119,3 +128,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
+
+CELERY_BROKER_URL = 'redis://localhost:6379'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'

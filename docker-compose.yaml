@@ -1,0 +1,44 @@
+db:
+    restart: always
+    image: postgres:latest
+    volumes:
+        - pgdata:/var/lib/postgresql/data/
+    environment:
+        POSTGRES_USER: django
+        POSTGRES_PASSWORD: django
+
+redis:
+    image: redis:6.0-rc3-alpine
+    container_name: redis
+    command: ["redis-server", "--appendonly", "yes"]
+    hostname: redis
+    restart: always
+
+api:
+    build: ./bank_operations
+    command: bash -c "python manage.py migrate && python manage.py loaddata tests && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+        - ./bank_operations:/django
+    ports:
+        - "8000:8000"
+    links:
+        - db
+        - redis
+    environment:
+        DEBUG: "true"
+        DATABASE_NAME: django
+        DATABASE_USER: django
+        DATABASE_PASSWORD: django
+        DATABASE_SERVICE_HOST: database
+adminer:
+    image: adminer
+    restart: always
+    ports:
+        - 8080:8080
+    links:
+        - db
+celery:
+    build: ./bank_operations
+    command: celery -A django worker -l info
+    volumes:
+        - ./bank_operations:/usr/src/app
