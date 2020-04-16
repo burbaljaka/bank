@@ -1,10 +1,11 @@
 from django.shortcuts import render
-from .models import *
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
-from .tasks import *
-from .serializers import *
+from .tasks import process_operation
+from .serializers import OperationSerializer
+from .models import Client
+from django.db.models import ObjectDoesNotExist
 
 def make_response(status=status.HTTP_400_BAD_REQUEST,
                   result=False,
@@ -28,7 +29,6 @@ def make_response(status=status.HTTP_400_BAD_REQUEST,
             'addition': operation_data,
             'description': description
             }
-0
 
 # Create your views here.
 @api_view(['POST'])
@@ -41,7 +41,7 @@ def addition(request):
         return Response(make_response(description='Please provide correct data', operation=operation), status=status.HTTP_400_BAD_REQUEST)
     try:
         user = Client.objects.get(id=serializer.validated_data['id'])
-    except:
+    except ObjectDoesNotExist:
         return Response(make_response(description='Incorrect user id', operation=operation, status=status.HTTP_400_BAD_REQUEST))
 
     if not user.status:
@@ -71,7 +71,7 @@ def substraction(request):
 
     try:
         user = Client.objects.get(id=serializer.validated_data['id'])
-    except:
+    except ObjectDoesNotExist:
         return Response(make_response(description='Incorrect user id', operation=operation),
                         status=status.HTTP_400_BAD_REQUEST)
 
@@ -106,7 +106,7 @@ def get_status(request):
     if 'id' in request.data:
         try:
             user = Client.objects.get(id=request.data['id'])
-        except:
+        except ObjectDoesNotExist:
             return Response(make_response(description='Please provide valid id', operation='get_status'))
     else:
         return Response(make_response(description='Please provide valid id', operation='get_status'))

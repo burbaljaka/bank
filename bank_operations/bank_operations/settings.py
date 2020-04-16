@@ -143,5 +143,4 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'api.tasks.process_hold',
         'schedule': 600.0
     }
-
 }

@@ -6,17 +6,12 @@ import json
 from rest_framework import status
 from celery.contrib.testing.worker import start_worker
 from django.test import TransactionTestCase
-from bank_operations.celery import app
 
 # Create your tests here.
 
 class APITests(TestCase):
     @classmethod
     def setUpClass(cls):
-        # super().setUpClass()
-        # cls.celery_worker = start_worker(app)
-        # cls.celery_worker.__enter__()
-
         cls.user_1_good_balance = Client.objects.create(id='26c940a1-7228-4ea2-a3bce6460b172040',
                                                       name='Петров Иван Сергеевич',
                                                       balance=1700,
@@ -106,12 +101,6 @@ class APITests(TestCase):
         self.assertEqual(response.data['addition']['name'], self.user_1_good_balance.name)
 
 
-    @override_settings(CELERY_TASK_ALWAYS_EAGER=True, CELERY_TASK_EAGER_PROPOGATES=True)
-    def test_celery_task_addition(self):
-        result = process_operation(100, self.user_1_good_balance.id, 'addition')
-        self.assertEqual(self.user_1_good_balance.balance, 1800)
-
     @classmethod
     def tearDownClass(cls):
-        super().tearDownClass()
-        cls.celery_worker.__exit__(None, None, None)
+        pass
