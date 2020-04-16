@@ -1,47 +1,65 @@
-db:
-    restart: always
-    image: postgres:latest
-    volumes:
-        - pgdata:/var/lib/postgresql/data/
-    environment:
-        POSTGRES_USER: django
-        POSTGRES_PASSWORD: django
+version: '3.7'
 
-redis:
-    image: redis:6.0-rc3-alpine
-    container_name: redis
-    command: ["redis-server", "--appendonly", "yes"]
-    hostname: redis
-    restart: always
+services:
+    db:
+        restart: always
+        image: postgres:latest
+        volumes:
+            - pgdata:/var/lib/postgresql/data/
+        environment:
+            POSTGRES_USER: django
+            POSTGRES_PASSWORD: django
 
-api:
-    build: ./bank_operations
-    command: bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
-    volumes:
-        - ./bank_operations:/django
-    ports:
-        - "8000:8000"
-    links:
-        - db
-        - redis
-    environment:
-        DEBUG: "true"
-        DATABASE_NAME: django
-        DATABASE_USER: django
-        DATABASE_PASSWORD: django
-        DATABASE_SERVICE_HOST: database
-adminer:
-    image: adminer
-    restart: always
-    ports:
-        - 8080:8080
-    links:
-        - db
-celery:
-    build: ./bank_operations
-    command: celery -A bank_operations worker -l info
-    volumes:
-        - ./bank_operations:/django
-    links:
-        - redis
-        - api
+    redis:
+        image: redis:6.0-rc3-alpine
+        container_name: redis
+    #    command: ["redis-server", "--appendonly", "yes"]
+        hostname: redis
+        restart: always
+    api:
+        build: ./bank_operations
+        command: bash -c "python manage.py migrate && python manage.py loaddata test_data && gunicorn bank_operations.wsgi:application --bind 0.0.0.0:8000"
+        volumes:
+            - ./bank_operations:/django
+        expose:
+            - 8000
+        links:
+            - db
+            - redis
+        depends_on:
+            - db
+        environment:
+            DEBUG: "true"
+            DATABASE_NAME: django
+            DATABASE_USER: django
+            DATABASE_PASSWORD: django
+            DATABASE_SERVICE_HOST: database
+    #adminer:
+    #    image: adminer
+    #    restart: always
+    #    ports:
+    #        - 8080:8080
+    #    links:
+    #        - db
+    celery:
+        build: ./bank_operations
+        command: celery -A bank_operations worker -B -l info
+        volumes:
+            - ./bank_operations:/django
+        links:
+            - api
+            - redis
+            - db
+    nginx:
+        build: ./nginx
+        expose:
+            - 8080
+        ports:
+            - 80:8080
+        depends_on:
+            - api
+        volumes:
+            - static_volume:/usr/src/app/staticfiles
+volumes:
+    pgdata:
+    static_volume:

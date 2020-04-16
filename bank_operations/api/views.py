@@ -34,25 +34,22 @@ def make_response(status=status.HTTP_400_BAD_REQUEST,
 @api_view(['POST'])
 def addition(request):
     operation = 'addition'
-
     serializer = OperationSerializer(data=request.data)
     serializer.is_valid()
-    if serializer.errors:
-        return Response(make_response(description='Please provide correct data', operation=operation))
 
+    if serializer.errors:
+        return Response(make_response(description='Please provide correct data', operation=operation), status=status.HTTP_400_BAD_REQUEST)
     try:
-        user = Client.objects.get(serializer.validated_data['uuid'])
+        user = Client.objects.get(id=serializer.validated_data['id'])
     except:
-        return Response(make_response(description='Incorrect user id', operation=operation))
+        return Response(make_response(description='Incorrect user id', operation=operation, status=status.HTTP_400_BAD_REQUEST))
 
     if not user.status:
-        return Response(make_response(description='Client account is closed', operation=operation))
+        return Response(make_response(description='Client account is closed', operation=operation, user=user), status=status.HTTP_400_BAD_REQUEST)
 
     amount = serializer.validated_data['amount']
     operate = 'addition'
-    count = 20
-    transaction = Transaction.objects.create(amount=amount, operation='a', user=user)
-    process_operation.apply_async((amount, user, operate), countdown=count)
+    process_operation.delay(amount, user.id, operate)
 
     return Response(make_response(status=status.HTTP_200_OK,
                                   result=True,
@@ -69,29 +66,27 @@ def substraction(request):
     serializer = OperationSerializer(data=request.data)
     serializer.is_valid()
     if serializer.errors:
-        return Response(make_response(description='Please provide correct data', operation=operation))
+        return Response(make_response(description='Please provide correct data', operation=operation),
+                        status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        user = Client.objects.get(serializer.validated_data['uuid'])
+        user = Client.objects.get(id=serializer.validated_data['id'])
     except:
-        return Response(make_response(description='Incorrect user id', operation=operation))
-
-    if request.data['uuid']:
-        user = Client.objects.get(id=request.data['uuid'])
-    else:
-        return Response(make_response(description='Incorrect user id', operation=operation))
+        return Response(make_response(description='Incorrect user id', operation=operation),
+                        status=status.HTTP_400_BAD_REQUEST)
 
     if not user.status:
-        return Response(make_response(description='Client account is closed', operation=operation))
+        return Response(make_response(description='Client account is closed', operation=operation, user=user),
+                        status=status.HTTP_400_BAD_REQUEST)
 
     amount = serializer.validated_data['amount']
+    if user.balance < user.hold + int(amount):
+        return Response(make_response(description='You do not have enough balance to process such operation'),
+                        status=status.HTTP_400_BAD_REQUEST)
 
-    if user.balance < user.hold + amount:
-        return Response(make_response(description='You do not have enough balance to process such operation'))
-    operate = 'on_hold'
+    operate = 'substraction'
     count = 10
-    transaction = Transaction.objects.create(amount=amount, operation='s', user=user)
-    process_operation.apply_async((amount, user, operate), countdown=count)
+    process_operation.delay(amount, user.id, operate)
     return Response(make_response(status=status.HTTP_200_OK,
                                   result=True,
                                   operation='substraction',
@@ -103,16 +98,18 @@ def substraction(request):
 def test(request):
     return Response(make_response(status=status.HTTP_200_OK,
                                   description='Service is up currently',
-                                  operation='ping',
                                   result=True))
 
 
-@api_view(['GET'])
+@api_view(['POST'])
 def get_status(request):
-    if 'uuid' in request.data:
-        user = Client.objects.get(id=request.data['uuid'])
+    if 'id' in request.data:
+        try:
+            user = Client.objects.get(id=request.data['id'])
+        except:
+            return Response(make_response(description='Please provide valid id', operation='get_status'))
     else:
-        return Response(make_response(description='Please provide valid uuid', operation='get_status'))
+        return Response(make_response(description='Please provide valid id', operation='get_status'))
 
     return Response(make_response(description='Client account info',
                                   user=user,

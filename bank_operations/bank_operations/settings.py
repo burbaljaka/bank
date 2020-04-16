@@ -129,8 +129,19 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-CELERY_BROKER_URL = 'redis://redis:6379'
+
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 
-CELERY_RESULT_BACKEND = 'redis'
+CELERY_BROKER_URL = 'redis://redis:6379'
+CELERY_BROKER_TRANSPORT = 'redis'
+CELERY_RESULT_BACKEND = "redis://redis"
+CELERY_BACKEND_URL = 'redis://redis:6379'
+
+CELERY_BEAT_SCHEDULE = {
+    'hold_processing': {
+        'task': 'api.tasks.process_hold',
+        'schedule': 600.0
+    }
+
+}
